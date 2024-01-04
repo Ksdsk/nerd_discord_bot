@@ -1,80 +1,23 @@
+# DISCORD
 import discord
-import os
-from random import uniform
 from discord import app_commands
-from dotenv import load_dotenv
+
+# ML MODELS
+from models.correctional import correctional_predicts
+from models.sentimental import sentimentally_negative_predicts
+
+# ETC
 from collections import defaultdict
-from transformers import pipeline
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.model_selection import train_test_split
-import re
-import nltk.corpus
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-from sklearn.tree import DecisionTreeClassifier
+from dotenv import load_dotenv
+import os
 
-messages = pd.read_csv('data/correctional.csv')
-
-vectorizer = TfidfVectorizer(
-    lowercase = False,
-    analyzer = "word"
-)
-
+# BOT SETTINGS
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
 nerding_list = defaultdict(lambda: set())
-sentimental_classifier = pipeline(
-    model="lxyuan/distilbert-base-multilingual-cased-sentiments-student", 
-    return_all_scores=True
-)
-
-nltk.download('stopwords')
-nltk.download('wordnet')
-
-stop = stopwords.words('english')
-lemmatizer = WordNetLemmatizer()
-vectorizer = TfidfVectorizer(
-    lowercase = False,
-    analyzer = "word"
-)
-
-data = []
-for message in messages["text_snippet"].tolist():
-    temp = message.lower()
-    temp = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", temp)
-    temp = " ".join([lemmatizer.lemmatize(word) for word in temp.split()])
-    data.append(temp)
-    
-data_labels = messages["correctional"].tolist()
-features = vectorizer.fit_transform(data)
-features_nd = features.toarray()
-
-X_train, X_test, y_train, y_test = train_test_split(
-    features_nd,
-    data_labels,
-    train_size = 0.8
-)
-
-rf_model = DecisionTreeClassifier()
-rf_model.fit(X=X_train, y=y_train)
-y_pred = rf_model.predict(X=X_test)
-
-def prepare_text(original: str):
-    text = original.lower()
-    text = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", text)
-    text = " ".join([lemmatizer.lemmatize(word) for word in text.split()])
-    return text
-
-def correctional(text: str) -> bool:
-    vectorized_text = vectorizer.transform([prepare_text(text)])
-    if int(rf_model.predict(vectorized_text)[0]) == 0:
-        return False
-    else:
-        return True
 
 @client.event
 async def on_ready():
@@ -114,14 +57,11 @@ async def get_invite_link(interaction):
 # Reading messages
 @client.event
 async def on_message(message: discord.Message):
-    if message.guild.id in nerding_list and message.author.id in nerding_list[message.guild.id]:
-        if (correctional(message.content)):
-            print(f"{message.author.id} said something correctional")
-            if (sentimental_classifier(message.content)[0][2]['score'] >= 0.3):
-                print(f"{message.author.id} said something negative")
-                await message.add_reaction("🤓")
-        else:
-            print(f"{message.author.id} said {message.content}")
+    nerd_authorized = message.guild.id in nerding_list and message.author.id in nerding_list[message.guild.id]
+    correctional_and_negative = correctional_predicts(message.content) and sentimentally_negative_predicts(message.content)
+    if nerd_authorized and correctional_and_negative:
+        await message.add_reaction("🤓")
+
 load_dotenv()
 
 client.run(os.getenv("DISCORD_BOT_TOKEN"))
