@@ -1,0 +1,18 @@
+# # add_nerd
+# # Adds a user to be nerded in future messages
+# @client.event
+# async def on_ready():
+#     await tree.sync()
+#     print(f'We have logged in as {client.user}')
+
+# @tree.command(
+#     name="add_nerd",
+#     description="Adds a user to be nerded in future messages"
+# )
+# @app_commands.describe(
+#     member="Target member"
+# )
+# async def add_nerd(interaction, member: discord.Member):
+#     await interaction.response.send_message(f"{member.mention} has been added to my nerding list in {member.guild.name}!")
+#     nerding_list[member.guild.id].append(member.id)
+#     print(nerding_list)
