@@ -5,12 +5,12 @@ from sklearn.tree import DecisionTreeClassifier
 import pickle
 
 # Load model
-f = open("pickles/correctional_model.pickle", "rb")
+f = open("models/pickles/correctional_model.pickle", "rb")
 model:DecisionTreeClassifier = pickle.loads(f.read())
 f.close()
 
 # Load vectorizer
-f = open("pickles/vectorizer.pickle", "rb")
+f = open("models/pickles/vectorizer.pickle", "rb")
 vectorizer:TfidfVectorizer = pickle.loads(f.read())
 f.close()
 
@@ -28,7 +28,7 @@ def __prepare_text(original: str):
     text = original.lower()
     text = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", text)
     text = " ".join([lemmatizer.lemmatize(word) for word in text.split()])
-    vectorized_text = vectorizer.transform([__prepare_text(text)])
+    vectorized_text = vectorizer.transform([text])
     return vectorized_text
 
 def correctional_predicts(text: str) -> bool:
