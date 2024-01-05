@@ -6,5 +6,4 @@ A discord bot to detect nerdy (and optionally toxic) messages and react with a :
 ## Project Status
 Active development
 
-## Dependencies
-pandas
+## Invite Link
